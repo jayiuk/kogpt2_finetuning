@@ -1,3 +1,5 @@
+from google.colab import drive
+drive.mount('/content/drive')
 
 import os
 import argparse
@@ -13,19 +15,20 @@ from generater import generate
 if sys.version_info < (3, 7):
     raise Exception("This script requires Python 3.7 or higher.")
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", default = "skt/kogpt2-base-v2", type = str)
-    parser.add_argument("--data_dir", default = "C:/Users/user/Downloads/data_f.csv", type = str)
-    parser.add_argument("--batch_size", default = 32, type = int)
-    parser.add_argument("--epochs", default = 10, type = int)
+    parser.add_argument("--data_dir", default = "/content/data_chat.csv", type = str)
+    parser.add_argument("--batch_size", default = 1, type = int)
+    parser.add_argument("--epochs", default = 1, type = int)
     parser.add_argument("--lr", default = 2e-5, type = float)
     parser.add_argument("--warmup_steps", default = 200, type = int)
     args = parser.parse_args('')
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     tokenizer.add_special_tokens({"pad_token" : "<pad>"})
-    
+
     base_dir = os.getcwd()
     data_DIR = os.path.join(base_dir, args.data_dir)
 
@@ -35,7 +38,7 @@ if __name__ == "__main__":
     model = GPT2LMHeadModel.from_pretrained(args.model_name).to(device)
     model.train()
 
-    optimizer = AdamW(model.parameters(), lr = args.lr, no_deprecation_warning = True)
+    optimizer = AdamW(model.parameters(), lr = args.lr)
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps = args.warmup_steps, num_training_steps = -1)
     min_loss = int(1e-9)
 
@@ -53,8 +56,7 @@ if __name__ == "__main__":
 
         print(f"epoch {epoch} loss {outputs[0].item():0.2f}")
 
-        if outputs[0].item() < min_loss:
-            min_loss = outputs[0].item()
-            model.save_pretrained("./best_model")
+
+        model.save_pretrained("chatf_model.h5")
 
     print("Training Done!")
