@@ -13,64 +13,9 @@ import numpy as np
 from google.colab import drive
 drive.mount('/content/drive')
 
-data_a = pd.read_csv('/content/drive/MyDrive/gdsc/answer.csv')
-data_q = pd.read_csv('/content/drive/MyDrive/gdsc/question.csv')
-
-data_a
-
-data_q
-
-data = pd.read_csv('/content/drive/MyDrive/gdsc/chat_data.csv')
-
-data
-
-chat_data = data[['question', 'answer']]
-
-chat_data
-
-chat_data.to_csv('chat_train.csv', index = False)
-
-test = chat_data[:300]
-test
-
-test.to_csv('chat_test.csv', index = False)
-
 !pip install pytorch-lightning
 
 !pip install transformers
-
-tra = pd.read_csv('/content/drive/MyDrive/gdsc/chat_train.csv')
-tra
-
-te = pd.read_csv('/content/drive/MyDrive/gdsc/chat_test.csv')
-
-te
-
-import math
-import pandas as pd
-import numpy as np
-import random
-import re
-import torch
-from torch.utils.data import DataLoader, Dataset
-from transformers import PreTrainedTokenizerFast
-
-train = pd.read_csv('/content/drive/MyDrive/gdsc/chat_train.csv')
-test = pd.read_csv('/content/drive/MyDrive/gdsc/chat_test.csv')
-
-BOS = "</s>"
-EOS = "</s>"
-PAD = "<pad>"
-MASK = "<unused0>"
-tokenizer = PreTrainedTokenizerFast.from_pretrained("skt/kogpt2-base-v2", bos_token = BOS, eos_token = EOS, unk_token = "<unk>", pad_token = PAD, mask_token = MASK)
-
-Q_TKN = "<usr>"
-A_TKN = "<sys>"
-BOS = "</s>"
-EOS = "</s>"
-PAD = "<pad>"
-MASK = "<unused0>"
-SENT = "<unused1>"
 
 import math
 import pandas as pd
@@ -166,17 +111,18 @@ from transformers.optimization import AdamW, get_cosine_schedule_with_warmup
 from transformers import PreTrainedTokenizerFast, GPT2LMHeadModel
 import re
 
+
+def collate_batch(batch):
+    data = [item[0] for item in batch]
+    mask = [item[1] for item in batch]
+    return torch.LongTensor(data), torch.LongTensor(mask)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--epochs", default = 10, type = int)
 parser.add_argument("--lr", default = 0.002, type = float)
 parser.add_argument("--batch_size", default = 32, type = int)
 parser.add_argument("--warmup_steps", default = 200, type = int)
 args = parser.parse_args('')
-
-def collate_batch(batch):
-    data = [item[0] for item in batch]
-    mask = [item[1] for item in batch]
-    return torch.LongTensor(data), torch.LongTensor(mask)
 
 tokenizer = PreTrainedTokenizerFast.from_pretrained("skt/kogpt2-base-v2", bos_token = BOS, eos_token = EOS, unk_token = "<unk>", pad_token = PAD, mask_token = MASK)
 model = GPT2LMHeadModel.from_pretrained('skt/kogpt2-base-v2')
@@ -204,7 +150,7 @@ for epoch in range(args.epochs):
         out = out.logits
         mask_3d = mask.unsqueeze(dim = 2).repeat_interleave(repeats = out.shape[2], dim = 2)
         mask_out = torch.where(mask_3d == 1, out, Sneg * torch.ones_like(out))
-        loss = criterion(mask_out.transpose(2, 1), answer)
+        loss = criterion(mask_out.transpose(1, 2), token_ids)
         avg_loss = loss.sum() / mask.sum()
         avg_loss.backward()
         optimizer.step()
