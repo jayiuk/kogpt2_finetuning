@@ -7,8 +7,8 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from transformers import PreTrainedTokenizerFast
 
-train = pd.read_csv("C:/Users/jayiu/kogpt2_finetuning/chat_train.csv")
-test = pd.read_csv("C:/Users/jayiu/kogpt2_finetuning/chat_test.csv")
+train = pd.read_csv('/content/drive/MyDrive/gdsc/chat_train.csv')
+test = pd.read_csv('/content/drive/MyDrive/gdsc/chat_test.csv')
 
 Q_TKN = "<usr>"
 A_TKN = "<sys>"
